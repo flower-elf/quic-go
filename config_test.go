@@ -65,6 +65,17 @@ func TestConfigValidation(t *testing.T) {
 		require.NoError(t, validateConfig(conf))
 		require.Equal(t, uint16(protocol.MaxPacketBufferSize), conf.InitialPacketSize)
 	})
+
+	t.Run("transport parameter limits", func(t *testing.T) {
+		conf := &Config{MaxUDPPayloadSize: 100, ActiveConnectionIDLimit: 1}
+		require.NoError(t, validateConfig(conf))
+		require.Equal(t, uint16(protocol.MinInitialPacketSize), conf.MaxUDPPayloadSize)
+		require.EqualValues(t, 2, conf.ActiveConnectionIDLimit)
+
+		conf = &Config{MaxUDPPayloadSize: protocol.MaxPacketBufferSize + 1}
+		require.NoError(t, validateConfig(conf))
+		require.Equal(t, uint16(protocol.MaxPacketBufferSize), conf.MaxUDPPayloadSize)
+	})
 }
 
 func TestConfigHandshakeIdleTimeout(t *testing.T) {
@@ -122,6 +133,12 @@ func configWithNonZeroNonFunctionFields(t *testing.T) *Config {
 			f.Set(reflect.ValueOf(true))
 		case "InitialPacketSize":
 			f.Set(reflect.ValueOf(uint16(1350)))
+		case "MaxUDPPayloadSize":
+			f.Set(reflect.ValueOf(uint16(1234)))
+		case "ActiveConnectionIDLimit":
+			f.Set(reflect.ValueOf(uint64(3)))
+		case "DisableActiveMigration":
+			f.Set(reflect.ValueOf(true))
 		case "DisablePathMTUDiscovery":
 			f.Set(reflect.ValueOf(true))
 		case "DisableConnectionIDRotation":
@@ -190,6 +207,9 @@ func TestConfigDefaultValues(t *testing.T) {
 	require.EqualValues(t, protocol.DefaultMaxReceiveConnectionFlowControlWindow, c.MaxConnectionReceiveWindow)
 	require.EqualValues(t, protocol.DefaultMaxIncomingStreams, c.MaxIncomingStreams)
 	require.EqualValues(t, protocol.DefaultMaxIncomingUniStreams, c.MaxIncomingUniStreams)
+	require.EqualValues(t, protocol.MaxPacketBufferSize, c.MaxUDPPayloadSize)
+	require.EqualValues(t, protocol.MaxActiveConnectionIDs, c.ActiveConnectionIDLimit)
+	require.False(t, c.DisableActiveMigration)
 	require.False(t, c.DisablePathMTUDiscovery)
 	require.False(t, c.DisableConnectionIDRotation)
 	require.Nil(t, c.GetConfigForClient)

@@ -467,14 +467,15 @@ var newClientConnection = func(
 		MaxBidiStreamNum:               protocol.StreamNum(s.config.MaxIncomingStreams),
 		MaxUniStreamNum:                protocol.StreamNum(s.config.MaxIncomingUniStreams),
 		MaxAckDelay:                    protocol.MaxAckDelayInclGranularity,
-		MaxUDPPayloadSize:              protocol.MaxPacketBufferSize,
+		MaxUDPPayloadSize:              protocol.ByteCount(s.config.MaxUDPPayloadSize),
 		AckDelayExponent:               protocol.AckDelayExponent,
-		// For interoperability with quic-go versions before May 2023, this value must be set to a value
-		// different from protocol.DefaultActiveConnectionIDLimit.
-		// If set to the default value, it will be omitted from the transport parameters, which will make
-		// old quic-go versions interpret it as 0, instead of the default value of 2.
+		// For interoperability with quic-go versions before May 2023, the default value must be
+		// different from protocol.DefaultActiveConnectionIDLimit: a value equal to the default is
+		// omitted from the transport parameters, and those versions interpret the omission as 0
+		// instead of the default value of 2.
 		// See https://github.com/metacubex/quic-go/pull/3806.
-		ActiveConnectionIDLimit:   protocol.MaxActiveConnectionIDs,
+		ActiveConnectionIDLimit:   s.config.ActiveConnectionIDLimit,
+		DisableActiveMigration:    s.config.DisableActiveMigration,
 		InitialSourceConnectionID: srcConnID,
 		EnableResetStreamAt:       conf.EnableStreamResetPartialDelivery,
 	}

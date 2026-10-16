@@ -45,6 +45,15 @@ func validateConfig(config *Config) error {
 	if config.InitialPacketSize > protocol.MaxPacketBufferSize {
 		config.InitialPacketSize = protocol.MaxPacketBufferSize
 	}
+	if config.MaxUDPPayloadSize > 0 && config.MaxUDPPayloadSize < protocol.MinInitialPacketSize {
+		config.MaxUDPPayloadSize = protocol.MinInitialPacketSize
+	}
+	if config.MaxUDPPayloadSize > protocol.MaxPacketBufferSize {
+		config.MaxUDPPayloadSize = protocol.MaxPacketBufferSize
+	}
+	if config.ActiveConnectionIDLimit > 0 && config.ActiveConnectionIDLimit < 2 {
+		config.ActiveConnectionIDLimit = 2
+	}
 	// check that all QUIC versions are actually supported
 	for _, v := range config.Versions {
 		if !protocol.IsValidVersion(v) {
@@ -104,6 +113,14 @@ func populateConfig(config *Config) *Config {
 	if initialPacketSize == 0 {
 		initialPacketSize = protocol.InitialPacketSize
 	}
+	maxUDPPayloadSize := config.MaxUDPPayloadSize
+	if maxUDPPayloadSize == 0 {
+		maxUDPPayloadSize = protocol.MaxPacketBufferSize
+	}
+	activeConnectionIDLimit := config.ActiveConnectionIDLimit
+	if activeConnectionIDLimit == 0 {
+		activeConnectionIDLimit = protocol.MaxActiveConnectionIDs
+	}
 
 	return &Config{
 		GetConfigForClient:               config.GetConfigForClient,
@@ -121,6 +138,9 @@ func populateConfig(config *Config) *Config {
 		TokenStore:                       config.TokenStore,
 		EnableDatagrams:                  config.EnableDatagrams,
 		InitialPacketSize:                initialPacketSize,
+		MaxUDPPayloadSize:                maxUDPPayloadSize,
+		ActiveConnectionIDLimit:          activeConnectionIDLimit,
+		DisableActiveMigration:           config.DisableActiveMigration,
 		DisablePathMTUDiscovery:          config.DisablePathMTUDiscovery,
 		DisableConnectionIDRotation:      config.DisableConnectionIDRotation,
 		EnableStreamResetPartialDelivery: config.EnableStreamResetPartialDelivery,

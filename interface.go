@@ -173,6 +173,16 @@ type Config struct {
 	// This allows the sending of QUIC packets that fully utilize the available MTU of the path.
 	// Path MTU discovery is only available on systems that allow setting of the Don't Fragment (DF) bit.
 	DisablePathMTUDiscovery bool
+	// MaxUDPPayloadSize is the value of the max_udp_payload_size transport parameter,
+	// i.e. the maximum UDP payload size this endpoint is willing to receive.
+	// If not set, it defaults to 1452 bytes.
+	MaxUDPPayloadSize uint16
+	// ActiveConnectionIDLimit is the value of the active_connection_id_limit transport parameter.
+	// If not set, it defaults to 4.
+	ActiveConnectionIDLimit uint64
+	// DisableActiveMigration advertises the disable_active_migration transport parameter,
+	// telling the peer that this endpoint does not support active connection migration.
+	DisableActiveMigration bool
 	// DisableConnectionIDRotation disables the periodic rotation of the destination connection ID.
 	// Connection IDs are still switched when the peer's retire_prior_to field requires it, and when probing a new path.
 	DisableConnectionIDRotation bool
