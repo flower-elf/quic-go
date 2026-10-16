@@ -295,6 +295,7 @@ var newConnection = func(
 		runner.RemoveResetToken,
 		s.queueControlFrame,
 	)
+	s.connIDManager.disableRotation = s.config.DisableConnectionIDRotation
 	s.connIDGenerator = newConnIDGenerator(
 		runner,
 		srcConnID,
@@ -427,6 +428,7 @@ var newClientConnection = func(
 		runner.RemoveResetToken,
 		s.queueControlFrame,
 	)
+	s.connIDManager.disableRotation = s.config.DisableConnectionIDRotation
 	s.connIDGenerator = newConnIDGenerator(
 		runner,
 		srcConnID,

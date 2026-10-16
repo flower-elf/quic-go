@@ -230,6 +230,51 @@ func TestConnIDManagerConnIDRotation(t *testing.T) {
 	require.Equal(t, []wire.Frame{&wire.RetireConnectionIDFrame{SequenceNumber: 2}}, frameQueue)
 }
 
+// disableRotation 只关掉按发包数触发的主动轮换；握手后的首次切换与
+// 对端 retire_prior_to 要求的切换都必须保留。
+func TestConnIDManagerConnIDRotationDisabled(t *testing.T) {
+	var frameQueue []wire.Frame
+	m := newConnIDManager(
+		protocol.ParseConnectionID([]byte{1, 2, 3, 4}),
+		func(token protocol.StatelessResetToken) {},
+		func(token protocol.StatelessResetToken) {},
+		func(f wire.Frame) { frameQueue = append(frameQueue, f) },
+	)
+	m.disableRotation = true
+	m.SetHandshakeComplete()
+
+	for i := uint64(0); i < 2; i++ {
+		require.NoError(t, m.Add(&wire.NewConnectionIDFrame{
+			SequenceNumber:      i + 1,
+			ConnectionID:        protocol.ParseConnectionID([]byte{5 + byte(i), 6, 7, 8}),
+			StatelessResetToken: protocol.StatelessResetToken{1, 2, 3, 4, 5, 6, 7, 8},
+		}))
+	}
+	connID := m.Get()
+	require.Equal(t, protocol.ParseConnectionID([]byte{5, 6, 7, 8}), connID)
+	require.Equal(t, []wire.Frame{&wire.RetireConnectionIDFrame{SequenceNumber: 0}}, frameQueue)
+	frameQueue = nil
+
+	for i := 0; i < 5*protocol.PacketsPerConnectionID; i++ {
+		m.SentPacket()
+	}
+	require.Equal(t, connID, m.Get())
+	require.Empty(t, frameQueue)
+
+	require.NoError(t, m.Add(&wire.NewConnectionIDFrame{
+		SequenceNumber:      3,
+		ConnectionID:        protocol.ParseConnectionID([]byte{9, 10, 11, 12}),
+		StatelessResetToken: protocol.StatelessResetToken{9, 8, 7, 6, 5, 4, 3, 2},
+		RetirePriorTo:       3,
+	}))
+	require.Equal(t, protocol.ParseConnectionID([]byte{9, 10, 11, 12}), m.Get())
+	seqs := make([]uint64, 0, len(frameQueue))
+	for _, f := range frameQueue {
+		seqs = append(seqs, f.(*wire.RetireConnectionIDFrame).SequenceNumber)
+	}
+	require.ElementsMatch(t, []uint64{1, 2}, seqs)
+}
+
 func TestConnIDManagerPathMigration(t *testing.T) {
 	var frameQueue []wire.Frame
 	var addedTokens, removedTokens []protocol.StatelessResetToken

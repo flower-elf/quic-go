@@ -39,6 +39,9 @@ type connIDManager struct {
 	removeStatelessResetToken func(protocol.StatelessResetToken)
 	queueControlFrame         func(wire.Frame)
 
+	// disableRotation turns off the periodic connection ID rotation, see Config.DisableConnectionIDRotation.
+	disableRotation bool
+
 	closed bool
 }
 
@@ -231,6 +234,9 @@ func (h *connIDManager) shouldUpdateConnID() bool {
 	// For later changes, only change if
 	// 1. The queue of connection IDs is filled more than 50%.
 	// 2. We sent at least PacketsPerConnectionID packets
+	if h.disableRotation {
+		return false
+	}
 	return 2*len(h.queue) >= protocol.MaxActiveConnectionIDs &&
 		h.packetsSinceLastChange >= h.packetsPerConnectionID
 }

@@ -173,6 +173,9 @@ type Config struct {
 	// This allows the sending of QUIC packets that fully utilize the available MTU of the path.
 	// Path MTU discovery is only available on systems that allow setting of the Don't Fragment (DF) bit.
 	DisablePathMTUDiscovery bool
+	// DisableConnectionIDRotation disables the periodic rotation of the destination connection ID.
+	// Connection IDs are still switched when the peer's retire_prior_to field requires it, and when probing a new path.
+	DisableConnectionIDRotation bool
 	// Allow0RTT allows the application to decide if a 0-RTT connection attempt should be accepted.
 	// Only valid for the server.
 	Allow0RTT bool
